@@ -11,7 +11,7 @@ type JSONFormatter struct {
 }
 
 func (f *JSONFormatter) Format(entry *Entry) ([]byte, error) {
-	data := make(Fields, len(entry.Data)+3)
+	data := make(Fields, len(entry.Data)+5)
 	for k, v := range entry.Data {
 		switch v := v.(type) {
 		case error:
@@ -32,6 +32,11 @@ func (f *JSONFormatter) Format(entry *Entry) ([]byte, error) {
 	data["time"] = entry.Time.Format(timestampFormat)
 	data["msg"] = entry.Message
 	data["level"] = entry.Level.String()
+
+	if entry.Logger.TraceEnabled() {
+		data["file"] = entry.File
+		data["line"] = entry.Line
+	}
 
 	serialized, err := json.Marshal(data)
 	if err != nil {

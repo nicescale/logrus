@@ -9,6 +9,10 @@ var (
 	std = New()
 )
 
+func init() {
+	std.setCallDepth(4)
+}
+
 func StandardLogger() *Logger {
 	return std
 }
@@ -39,6 +43,16 @@ func GetLevel() Level {
 	std.mu.Lock()
 	defer std.mu.Unlock()
 	return std.Level
+}
+
+// EnableTrace enables the error tracing function.
+func EnableTrace() {
+	std.EnableTrace()
+}
+
+// DisableTrace disables the error tracing function.
+func DisableTrace() {
+	std.DisableTrace()
 }
 
 // AddHook adds a hook to the standard logger hooks.

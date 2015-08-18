@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"runtime"
 	"time"
 )
 
@@ -26,6 +27,12 @@ type Entry struct {
 
 	// Message passed to Debug, Info, Warn, Error, Fatal or Panic
 	Message string
+
+	// Line is the line in the source code file that emitted the log.
+	Line int
+
+	// File is the name of the source code file that emitted the log.
+	File string
 }
 
 func NewEntry(logger *Logger) *Entry {
@@ -76,6 +83,13 @@ func (entry Entry) log(level Level, msg string) {
 	entry.Time = time.Now()
 	entry.Level = level
 	entry.Message = msg
+
+	if entry.Logger.TraceEnabled() {
+		if _, file, line, ok := runtime.Caller(entry.Logger.CallDepth()); ok {
+			entry.File = file
+			entry.Line = line
+		}
+	}
 
 	if err := entry.Logger.Hooks.Fire(level, &entry); err != nil {
 		entry.Logger.mu.Lock()
