@@ -27,7 +27,12 @@ type Logger struct {
 	// logged. `logrus.Debug` is useful in
 	Level Level
 	// Used to sync writing to the log.
-	mu sync.Mutex
+	mu sync.RWMutex
+
+	// traceEnabled is a bool flag that indicates whether the line number and
+	// the file name should be printed in the log message.
+	traceEnabled bool
+	callDepth    int
 }
 
 // Creates a new logger. Configuration should be set by changing `Formatter`,
@@ -48,7 +53,41 @@ func New() *Logger {
 		Formatter: new(TextFormatter),
 		Hooks:     make(LevelHooks),
 		Level:     InfoLevel,
+		callDepth: 3,
 	}
+}
+
+// EnableTrace enables the error tracing function.
+func (logger *Logger) EnableTrace() {
+	logger.mu.Lock()
+	defer logger.mu.Unlock()
+	logger.traceEnabled = true
+}
+
+// DisableTrace disables the error tracing function.
+func (logger *Logger) DisableTrace() {
+	logger.mu.Lock()
+	defer logger.mu.Unlock()
+	logger.traceEnabled = false
+}
+
+// TraceEnabled returns whether the trace function is enabled.
+func (logger *Logger) TraceEnabled() bool {
+	logger.mu.RLock()
+	defer logger.mu.RUnlock()
+	return logger.traceEnabled
+}
+
+func (logger *Logger) setCallDepth(depth int) {
+	logger.mu.Lock()
+	defer logger.mu.Unlock()
+	logger.callDepth = depth
+}
+
+func (logger *Logger) CallDepth() int {
+	logger.mu.RLock()
+	defer logger.mu.RUnlock()
+	return logger.callDepth
 }
 
 // Adds a field to the log entry, note that you it doesn't log until you call

@@ -84,6 +84,12 @@ func (f *TextFormatter) Format(entry *Entry) ([]byte, error) {
 			f.appendKeyValue(b, "time", entry.Time.Format(timestampFormat))
 		}
 		f.appendKeyValue(b, "level", entry.Level.String())
+
+		if entry.Logger.TraceEnabled() {
+			f.appendKeyValue(b, "file", entry.File)
+			f.appendKeyValue(b, "line", fmt.Sprint(entry.Line))
+		}
+
 		f.appendKeyValue(b, "msg", entry.Message)
 		for _, key := range keys {
 			f.appendKeyValue(b, key, entry.Data[key])
@@ -108,12 +114,17 @@ func (f *TextFormatter) printColored(b *bytes.Buffer, entry *Entry, keys []strin
 	}
 
 	levelText := strings.ToUpper(entry.Level.String())[0:4]
+	trace := ""
+	if entry.Logger.TraceEnabled() {
+		trace = fmt.Sprintf("\x1b[35m%s:%d\x1b[0m", entry.File, entry.Line)
+	}
 
 	if !f.FullTimestamp {
-		fmt.Fprintf(b, "\x1b[%dm%s\x1b[0m[%04d] %-44s ", levelColor, levelText, miniTS(), entry.Message)
+		fmt.Fprintf(b, "\x1b[%dm%s\x1b[0m[%04d] %s %-44s ", levelColor, levelText, miniTS(), trace, entry.Message)
 	} else {
-		fmt.Fprintf(b, "\x1b[%dm%s\x1b[0m[%s] %-44s ", levelColor, levelText, entry.Time.Format(timestampFormat), entry.Message)
+		fmt.Fprintf(b, "\x1b[%dm%s\x1b[0m[%s] %s %-44s ", levelColor, levelText, entry.Time.Format(timestampFormat), trace, entry.Message)
 	}
+
 	for _, k := range keys {
 		v := entry.Data[k]
 		fmt.Fprintf(b, " \x1b[%dm%s\x1b[0m=%+v", levelColor, k, v)
